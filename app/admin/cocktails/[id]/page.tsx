@@ -19,7 +19,7 @@ type Ingredient = {
 };
 
 type CocktailIngredient = {
-  ingredientId: string;
+  ingredientId: string | undefined;
   ingredientName?: string;
   quantity: number | null;
   unit: string;
@@ -35,14 +35,26 @@ export default function CocktailFormPage() {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    description: string;
+    type: string;
+    baseSpirit: string | undefined;
+    glass: string;
+    ice: boolean;
+    iceType: string | undefined;
+    method: string;
+    garnish: string;
+    imageUrl: string;
+    ingredients: CocktailIngredient[];
+  }>({
     name: '',
     description: '',
     type: 'Long drink',
-    baseSpirit: '',
+    baseSpirit: undefined,
     glass: '',
     ice: false,
-    iceType: '',
+    iceType: undefined,
     method: '',
     garnish: '',
     imageUrl: '',
@@ -75,10 +87,10 @@ export default function CocktailFormPage() {
         name: data.name,
         description: data.description || '',
         type: data.type,
-        baseSpirit: data.baseSpirit || '',
+        baseSpirit: data.baseSpirit || undefined,
         glass: data.glass,
         ice: data.ice,
-        iceType: data.iceType || '',
+        iceType: data.iceType || undefined,
         method: data.method,
         garnish: data.garnish || '',
         imageUrl: data.imageUrl || '',
@@ -130,7 +142,7 @@ export default function CocktailFormPage() {
       ...formData,
       ingredients: [
         ...formData.ingredients,
-        { ingredientId: '', quantity: null, unit: 'cl', isOptional: false },
+        { ingredientId: undefined, quantity: null, unit: 'cl', isOptional: false },
       ],
     });
   };
@@ -248,13 +260,13 @@ export default function CocktailFormPage() {
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="baseSpirit">Base spiritueuse</Label>
-                  <Select value={formData.baseSpirit} onValueChange={(v) => setFormData({ ...formData, baseSpirit: v })}>
+                  <Label htmlFor="baseSpirit">Base spiritueuse (optionnel)</Label>
+                  <Select value={formData.baseSpirit || "none"} onValueChange={(v) => setFormData({ ...formData, baseSpirit: v === "none" ? undefined : v })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Optionnel" />
+                      <SelectValue placeholder="Sélectionner..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Aucune</SelectItem>
+                      <SelectItem value="none">Aucune</SelectItem>
                       <SelectItem value="gin">Gin</SelectItem>
                       <SelectItem value="vodka">Vodka</SelectItem>
                       <SelectItem value="rhum">Rhum</SelectItem>
@@ -289,7 +301,7 @@ export default function CocktailFormPage() {
                 {formData.ice && (
                   <div>
                     <Label htmlFor="iceType">Type de glace</Label>
-                    <Select value={formData.iceType} onValueChange={(v) => setFormData({ ...formData, iceType: v })}>
+                    <Select value={formData.iceType || "Cubes"} onValueChange={(v) => setFormData({ ...formData, iceType: v })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Type..." />
                       </SelectTrigger>
@@ -336,8 +348,8 @@ export default function CocktailFormPage() {
                   <div key={index} className="flex gap-2 items-start">
                     <div className="flex-1">
                       <Select
-                        value={ing.ingredientId}
-                        onValueChange={(v) => updateIngredient(index, 'ingredientId', v)}
+                        value={ing.ingredientId || "placeholder"}
+                        onValueChange={(v) => updateIngredient(index, 'ingredientId', v === "placeholder" ? undefined : v)}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Ingrédient..." />
