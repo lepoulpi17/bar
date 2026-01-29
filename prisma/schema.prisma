@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  employe
+  admin
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         UserRole @default(employe)
+  createdAt    DateTime @default(now())
+
+  @@index([email])
+}
+
+model Ingredient {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  category   String
+  subcategory String?
+  isAlcoholic Boolean @default(false)
+  baseSpirit String?
+  createdAt  DateTime @default(now())
+
+  cocktailIngredients CocktailIngredient[]
+  barAvailability     BarAvailability?
+
+  @@index([name])
+  @@index([category])
+}
+
+model Cocktail {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  type        String
+  baseSpirit  String?
+  glass       String
+  ice         Boolean  @default(false)
+  iceType     String?
+  method      String   @db.Text
+  garnish     String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ingredients CocktailIngredient[]
+
+  @@index([name])
+  @@index([baseSpirit])
+}
+
+model CocktailIngredient {
+  id           String   @id @default(cuid())
+  cocktailId   String
+  ingredientId String
+  quantity     Decimal? @db.Decimal(10, 2)
+  unit         String?
+  isOptional   Boolean  @default(false)
+
+  cocktail   Cocktail   @relation(fields: [cocktailId], references: [id], onDelete: Cascade)
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@index([cocktailId])
+  @@index([ingredientId])
+}
+
+model BarAvailability {
+  id           String   @id @default(cuid())
+  ingredientId String   @unique
+  available    Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+}
