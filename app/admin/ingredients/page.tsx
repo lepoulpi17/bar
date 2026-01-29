@@ -32,12 +32,18 @@ export default function AdminIngredientsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    category: string;
+    subcategory: string;
+    isAlcoholic: boolean;
+    baseSpirit: string | undefined;
+  }>({
     name: '',
     category: '',
     subcategory: '',
     isAlcoholic: false,
-    baseSpirit: '',
+    baseSpirit: undefined,
   });
 
   useEffect(() => {
@@ -62,7 +68,7 @@ export default function AdminIngredientsPage() {
       category: '',
       subcategory: '',
       isAlcoholic: false,
-      baseSpirit: '',
+      baseSpirit: undefined,
     });
     setEditingIngredient(null);
   };
@@ -78,7 +84,7 @@ export default function AdminIngredientsPage() {
       category: ingredient.category,
       subcategory: ingredient.subcategory || '',
       isAlcoholic: ingredient.isAlcoholic,
-      baseSpirit: ingredient.baseSpirit || '',
+      baseSpirit: ingredient.baseSpirit || undefined,
     });
     setEditingIngredient(ingredient);
     setDialogOpen(true);
@@ -217,13 +223,13 @@ export default function AdminIngredientsPage() {
 
                 {formData.isAlcoholic && (
                   <div>
-                    <Label htmlFor="baseSpirit">Base spiritueuse</Label>
-                    <Select value={formData.baseSpirit} onValueChange={(v) => setFormData({ ...formData, baseSpirit: v })}>
+                    <Label htmlFor="baseSpirit">Base spiritueuse (optionnel)</Label>
+                    <Select value={formData.baseSpirit || "none"} onValueChange={(v) => setFormData({ ...formData, baseSpirit: v === "none" ? undefined : v })}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Optionnel" />
+                        <SelectValue placeholder="Sélectionner..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Aucune</SelectItem>
+                        <SelectItem value="none">Aucune</SelectItem>
                         <SelectItem value="gin">Gin</SelectItem>
                         <SelectItem value="vodka">Vodka</SelectItem>
                         <SelectItem value="rhum">Rhum</SelectItem>
