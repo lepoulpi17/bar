@@ -24,6 +24,9 @@ export default async function Home() {
                 <Button asChild variant="outline">
                   <Link href="/bar">Carte des cocktails</Link>
                 </Button>
+                <Button asChild variant="outline">
+                  <Link href="/profile">Profil</Link>
+                </Button>
                 {session.user.role === 'admin' && (
                   <Button asChild>
                     <Link href="/admin">Administration</Link>
