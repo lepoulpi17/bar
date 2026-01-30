@@ -7,24 +7,24 @@ import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 
 const cocktailIngredientSchema = z.object({
-  ingredientId: z.string(),
+  ingredientId: z.string().min(1),
   quantity: z.number().nullable().optional(),
-  unit: z.string().nullable().optional(),
+  unit: z.string().nullable().optional().transform(val => val === '' ? null : val),
   isOptional: z.boolean().default(false),
 });
 
 const cocktailSchema = z.object({
   name: z.string().min(1),
-  description: z.string().nullable().optional(),
+  description: z.string().nullable().optional().transform(val => val === '' ? null : val),
   type: z.string().min(1),
-  baseSpirit: z.string().nullable().optional(),
+  baseSpirit: z.string().nullable().optional().transform(val => val === '' ? null : val),
   glass: z.string().min(1),
   ice: z.boolean(),
-  iceType: z.string().nullable().optional(),
+  iceType: z.string().nullable().optional().transform(val => val === '' ? null : val),
   method: z.string().min(1),
-  garnish: z.string().nullable().optional(),
-  imageUrl: z.string().nullable().optional(),
-  ingredients: z.array(cocktailIngredientSchema),
+  garnish: z.string().nullable().optional().transform(val => val === '' ? null : val),
+  imageUrl: z.string().nullable().optional().transform(val => val === '' ? null : val),
+  ingredients: z.array(cocktailIngredientSchema).min(1),
 });
 
 export async function GET() {
@@ -64,7 +64,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { ingredients, ...cocktailData } = cocktailSchema.parse(body);
+    console.log('Body reçu (création):', JSON.stringify(body, null, 2));
+
+    const validationResult = cocktailSchema.safeParse(body);
+    if (!validationResult.success) {
+      console.error('Erreur de validation:', validationResult.error);
+      return NextResponse.json({
+        error: 'Données invalides',
+        details: validationResult.error.errors
+      }, { status: 400 });
+    }
+
+    const { ingredients, ...cocktailData } = validationResult.data;
 
     const cocktail = await prisma.cocktail.create({
       data: {
@@ -89,9 +100,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(cocktail, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Données invalides', details: error.errors }, { status: 400 });
-    }
     console.error('Erreur création cocktail:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
