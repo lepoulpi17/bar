@@ -46,11 +46,17 @@ export default function BarPage() {
 
   const loadCocktails = async () => {
     try {
-      const res = await fetch('/api/admin/cocktails');
+      const res = await fetch('/api/cocktails');
+      if (!res.ok) {
+        throw new Error('Erreur lors du chargement');
+      }
       const data = await res.json();
-      setCocktails(data);
+      if (Array.isArray(data)) {
+        setCocktails(data);
+      }
     } catch (error) {
       console.error('Erreur chargement cocktails:', error);
+      setCocktails([]);
     } finally {
       setLoading(false);
     }

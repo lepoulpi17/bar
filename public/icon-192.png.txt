@@ -1,0 +1,4 @@
+Cette image doit être créée manuellement. Vous pouvez :
+1. Utiliser un outil comme https://realfavicongenerator.net/
+2. Créer une image 192x192 pixels avec votre logo
+3. La nommer icon-192.png et la placer dans /public/
