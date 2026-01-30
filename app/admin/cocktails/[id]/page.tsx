@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Plus, X, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, X, Upload, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 type Ingredient = {
@@ -34,6 +34,7 @@ export default function CocktailFormPage() {
   const [loading, setLoading] = useState(!isNew);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [generatingDescription, setGeneratingDescription] = useState(false);
 
   const [formData, setFormData] = useState<{
     name: string;
@@ -160,6 +161,46 @@ export default function CocktailFormPage() {
     setFormData({ ...formData, ingredients: newIngredients });
   };
 
+  const generateDescription = async () => {
+    if (!formData.name) {
+      toast.error('Ajoutez un nom au cocktail avant de générer la description');
+      return;
+    }
+
+    setGeneratingDescription(true);
+    try {
+      const ingredientsWithNames = formData.ingredients.map((ing) => {
+        const ingredient = ingredients.find((i) => i.id === ing.ingredientId);
+        return {
+          ...ing,
+          ingredientName: ingredient?.name,
+        };
+      });
+
+      const res = await fetch('/api/admin/cocktails/generate-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          type: formData.type,
+          baseSpirit: formData.baseSpirit,
+          ingredients: ingredientsWithNames,
+          garnish: formData.garnish,
+        }),
+      });
+
+      if (!res.ok) throw new Error();
+
+      const data = await res.json();
+      setFormData({ ...formData, description: data.description });
+      toast.success('Description générée avec succès');
+    } catch (error) {
+      toast.error('Erreur lors de la génération de la description');
+    } finally {
+      setGeneratingDescription(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -261,12 +302,25 @@ export default function CocktailFormPage() {
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={generateDescription}
+                    disabled={generatingDescription || !formData.name}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    {generatingDescription ? 'Génération...' : 'Générer'}
+                  </Button>
+                </div>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
+                  placeholder="Cliquez sur 'Générer' pour créer automatiquement une description..."
                 />
               </div>
 
