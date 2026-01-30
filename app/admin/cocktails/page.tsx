@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Trash2, Search, Euro } from 'lucide-react';
 import { toast } from 'sonner';
 
 type CocktailIngredient = {
@@ -33,9 +33,16 @@ type Cocktail = {
   ingredients: CocktailIngredient[];
 };
 
+type CocktailCost = {
+  cocktailId: string;
+  totalCost: number | null;
+  hasAllCosts: boolean;
+};
+
 export default function AdminCocktailsPage() {
   const router = useRouter();
   const [cocktails, setCocktails] = useState<Cocktail[]>([]);
+  const [costs, setCosts] = useState<Map<string, CocktailCost>>(new Map());
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -52,6 +59,7 @@ export default function AdminCocktailsPage() {
       const data = await res.json();
       if (Array.isArray(data)) {
         setCocktails(data);
+        await loadCosts(data);
       } else {
         throw new Error('Format de données invalide');
       }
@@ -61,6 +69,30 @@ export default function AdminCocktailsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadCosts = async (cocktailsList: Cocktail[]) => {
+    const costsMap = new Map<string, CocktailCost>();
+
+    await Promise.all(
+      cocktailsList.map(async (cocktail) => {
+        try {
+          const res = await fetch(`/api/cocktails/${cocktail.id}/cost`);
+          if (res.ok) {
+            const costData = await res.json();
+            costsMap.set(cocktail.id, {
+              cocktailId: cocktail.id,
+              totalCost: costData.totalCost,
+              hasAllCosts: costData.hasAllCosts,
+            });
+          }
+        } catch (error) {
+          console.error(`Erreur calcul coût pour ${cocktail.name}:`, error);
+        }
+      })
+    );
+
+    setCosts(costsMap);
   };
 
   const handleDelete = async (id: string) => {
@@ -145,6 +177,19 @@ export default function AdminCocktailsPage() {
                           <Badge variant="secondary">{cocktail.baseSpirit}</Badge>
                         )}
                         <Badge variant="outline">{cocktail.glass}</Badge>
+                        {costs.get(cocktail.id)?.totalCost !== undefined && costs.get(cocktail.id)?.totalCost !== null ? (
+                          <Badge
+                            variant="secondary"
+                            className="bg-green-100 text-green-800 font-semibold"
+                          >
+                            <Euro className="h-3 w-3 mr-1" />
+                            {costs.get(cocktail.id)?.totalCost?.toFixed(2)}
+                          </Badge>
+                        ) : costs.get(cocktail.id)?.hasAllCosts === false ? (
+                          <Badge variant="outline" className="text-orange-600 border-orange-300">
+                            Prix incomplet
+                          </Badge>
+                        ) : null}
                       </div>
                     </CardDescription>
                   </div>
