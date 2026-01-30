@@ -183,7 +183,7 @@ export default function CocktailFormPage() {
       imageUrl: formData.imageUrl || null,
       ingredients: formData.ingredients.map(ing => ({
         ingredientId: ing.ingredientId!,
-        quantity: ing.quantity,
+        quantity: ing.quantity !== null && ing.quantity !== undefined ? Number(ing.quantity) : null,
         unit: ing.unit || null,
         isOptional: ing.isOptional,
       })),

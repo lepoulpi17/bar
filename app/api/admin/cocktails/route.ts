@@ -8,7 +8,11 @@ export const dynamic = 'force-dynamic';
 
 const cocktailIngredientSchema = z.object({
   ingredientId: z.string().min(1),
-  quantity: z.number().nullable().optional(),
+  quantity: z.union([z.number(), z.string()]).nullable().optional().transform(val => {
+    if (val === null || val === undefined || val === '') return null;
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    return isNaN(num) ? null : num;
+  }),
   unit: z.string().nullable().optional().transform(val => val === '' ? null : val),
   isOptional: z.boolean().default(false),
 });
