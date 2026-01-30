@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Wine, Package, Martini, Users, ArrowLeft, LogOut } from 'lucide-react';
+import { Wine, Package, Martini, Users, ArrowLeft, LogOut, BarChart3 } from 'lucide-react';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -37,7 +37,7 @@ export default function AdminDashboard() {
           <p className="text-muted-foreground">Gérez les cocktails, ingrédients et utilisateurs</p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card
             className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
             onClick={() => router.push('/admin/cocktails')}
@@ -65,11 +65,29 @@ export default function AdminDashboard() {
                 <Package className="h-6 w-6 text-white" />
               </div>
               <CardTitle>Ingrédients</CardTitle>
-              <CardDescription>Gérer le stock d'ingrédients</CardDescription>
+              <CardDescription>Gérer les ingrédients</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
                 Ajouter, modifier et supprimer les ingrédients disponibles
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
+            onClick={() => router.push('/admin/stock')}
+          >
+            <CardHeader>
+              <div className="bg-purple-500 p-3 rounded-lg w-fit mb-3">
+                <BarChart3 className="h-6 w-6 text-white" />
+              </div>
+              <CardTitle>Stocks</CardTitle>
+              <CardDescription>Suivre les quantités</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Gérer les stocks et suivre les mouvements d'ingrédients
               </p>
             </CardContent>
           </Card>
