@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Wine, Package, Martini, Users, ArrowLeft, LogOut, BarChart3 } from 'lucide-react';
+import { Wine, Package, Martini, Users, ArrowLeft, LogOut, BarChart3, Activity } from 'lucide-react';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -37,7 +37,7 @@ export default function AdminDashboard() {
           <p className="text-muted-foreground">Gérez les cocktails, ingrédients et utilisateurs</p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           <Card
             className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
             onClick={() => router.push('/admin/cocktails')}
@@ -105,7 +105,25 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Modifier les rôles et permissions des utilisateurs
+                Créer, modifier et supprimer les comptes utilisateurs
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
+            onClick={() => router.push('/admin/logs')}
+          >
+            <CardHeader>
+              <div className="bg-slate-600 p-3 rounded-lg w-fit mb-3">
+                <Activity className="h-6 w-6 text-white" />
+              </div>
+              <CardTitle>Journal d'audit</CardTitle>
+              <CardDescription>Consulter les logs</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Voir toutes les actions effectuées sur le système
               </p>
             </CardContent>
           </Card>

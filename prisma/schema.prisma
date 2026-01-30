@@ -19,8 +19,52 @@ model User {
   name         String?
   role         UserRole @default(employe)
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  auditLogs AuditLog[]
 
   @@index([email])
+}
+
+enum AuditAction {
+  user_created
+  user_updated
+  user_deleted
+  ingredient_created
+  ingredient_updated
+  ingredient_deleted
+  cocktail_created
+  cocktail_updated
+  cocktail_deleted
+  stock_created
+  stock_updated
+  stock_deleted
+  stock_movement
+  bar_availability_updated
+  login_success
+  login_failed
+}
+
+model AuditLog {
+  id          String      @id @default(cuid())
+  userId      String?
+  userEmail   String?
+  userName    String?
+  action      AuditAction
+  entityType  String?
+  entityId    String?
+  entityName  String?
+  details     String?     @db.Text
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([entityType])
 }
 
 model Ingredient {
