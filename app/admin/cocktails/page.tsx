@@ -46,10 +46,18 @@ export default function AdminCocktailsPage() {
   const loadCocktails = async () => {
     try {
       const res = await fetch('/api/admin/cocktails');
+      if (!res.ok) {
+        throw new Error('Erreur lors du chargement');
+      }
       const data = await res.json();
-      setCocktails(data);
+      if (Array.isArray(data)) {
+        setCocktails(data);
+      } else {
+        throw new Error('Format de données invalide');
+      }
     } catch (error) {
       toast.error('Erreur lors du chargement des cocktails');
+      setCocktails([]);
     } finally {
       setLoading(false);
     }
