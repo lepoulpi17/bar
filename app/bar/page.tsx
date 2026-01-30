@@ -151,8 +151,9 @@ export default function BarPage() {
             {filteredCocktails.map((cocktail, idx) => (
               <Card
                 key={cocktail.id}
-                className="hover:shadow-xl transition-all duration-300 border-slate-200 bg-white/80 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-500"
+                className="hover:shadow-xl transition-all duration-300 border-slate-200 bg-white/80 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-500 cursor-pointer hover:border-amber-300"
                 style={{ animationDelay: `${idx * 50}ms` }}
+                onClick={() => router.push(`/cocktails/${cocktail.id}`)}
               >
                 <CardHeader className="pb-3 border-b border-slate-100">
                   <div className="flex items-start justify-between gap-2">
