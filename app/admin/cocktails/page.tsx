@@ -119,7 +119,11 @@ export default function AdminCocktailsPage() {
 
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredCocktails.map((cocktail) => (
-            <Card key={cocktail.id} className="hover:shadow-xl transition-all duration-300">
+            <Card
+              key={cocktail.id}
+              className="hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-blue-300"
+              onClick={() => router.push(`/cocktails/${cocktail.id}`)}
+            >
               <CardHeader className="pb-3 border-b">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
@@ -182,7 +186,10 @@ export default function AdminCocktailsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => router.push(`/admin/cocktails/${cocktail.id}`)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/admin/cocktails/${cocktail.id}`);
+                      }}
                       className="flex-1"
                     >
                       <Pencil className="h-4 w-4 mr-2" />
@@ -191,7 +198,10 @@ export default function AdminCocktailsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDelete(cocktail.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(cocktail.id);
+                      }}
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
                       <Trash2 className="h-4 w-4" />
