@@ -43,6 +43,7 @@ import {
   Package,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { StockExportButton } from '@/components/stock-export-button';
 
 interface Stock {
   id: string;
@@ -350,10 +351,13 @@ export default function StockManagement() {
                 </p>
               </div>
             </div>
-            <Button onClick={() => setShowInitDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Initialiser un stock
-            </Button>
+            <div className="flex items-center gap-2">
+              <StockExportButton stocks={stocks} />
+              <Button onClick={() => setShowInitDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Initialiser un stock
+              </Button>
+            </div>
           </div>
         </div>
       </header>
