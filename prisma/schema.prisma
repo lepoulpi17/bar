@@ -74,6 +74,8 @@ model Ingredient {
   subcategory String?
   isAlcoholic Boolean @default(false)
   baseSpirit String?
+  costPerUnit Decimal? @db.Decimal(10, 2)
+  costUnit    String?  @default("ml")
   createdAt  DateTime @default(now())
 
   cocktailIngredients CocktailIngredient[]
@@ -167,4 +169,39 @@ model StockMovement {
 
   @@index([stockId])
   @@index([createdAt])
+}
+
+model CocktailView {
+  id         String   @id @default(cuid())
+  cocktailId String
+  viewedAt   DateTime @default(now())
+  userId     String?
+  ipAddress  String?
+
+  @@index([cocktailId])
+  @@index([viewedAt])
+}
+
+model RestockSchedule {
+  id            String    @id @default(cuid())
+  ingredientId  String
+  scheduledDate DateTime
+  quantity      Decimal   @db.Decimal(10, 2)
+  unit          String
+  notes         String?   @db.Text
+  completed     Boolean   @default(false)
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([ingredientId])
+  @@index([scheduledDate])
+  @@index([completed])
+}
+
+model SystemSettings {
+  id             String   @id @default(cuid())
+  maintenanceMode Boolean @default(false)
+  maintenanceMessage String? @db.Text
+  updatedAt      DateTime @updatedAt
 }
