@@ -168,6 +168,12 @@ export default function CocktailFormPage() {
       return;
     }
 
+    const invalidIngredients = formData.ingredients.filter(ing => !ing.ingredientId);
+    if (invalidIngredients.length > 0) {
+      toast.error('Tous les ingrédients doivent être sélectionnés');
+      return;
+    }
+
     const payload = {
       ...formData,
       description: formData.description || null,
@@ -175,6 +181,12 @@ export default function CocktailFormPage() {
       iceType: formData.iceType || null,
       garnish: formData.garnish || null,
       imageUrl: formData.imageUrl || null,
+      ingredients: formData.ingredients.map(ing => ({
+        ingredientId: ing.ingredientId!,
+        quantity: ing.quantity,
+        unit: ing.unit || null,
+        isOptional: ing.isOptional,
+      })),
     };
 
     try {
