@@ -67,6 +67,10 @@ export default function AdminDashboard() {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground">{session?.user?.email}</span>
+              <Button variant="outline" size="sm" onClick={() => router.push('/profile')}>
+                <Users className="h-4 w-4 mr-2" />
+                Profil
+              </Button>
               <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: '/login' })}>
                 <LogOut className="h-4 w-4" />
               </Button>

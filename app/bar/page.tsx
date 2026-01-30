@@ -102,6 +102,14 @@ export default function BarPage() {
                 <User className="h-4 w-4 text-slate-600" />
                 <span className="text-slate-700">{session?.user?.email}</span>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push('/profile')}
+                className="hover:bg-blue-50 hover:border-blue-300"
+              >
+                <User className="h-4 w-4" />
+              </Button>
               {session?.user?.role === 'admin' && (
                 <Button
                   variant="outline"
