@@ -206,3 +206,39 @@
     animation: zoom-in 0.3s ease-out;
   }
 }
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-friendly {
+    page-break-inside: avoid;
+  }
+
+  header, nav, footer, .header, .nav, .footer {
+    display: none !important;
+  }
+
+  @page {
+    margin: 2cm;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+
+  img {
+    max-width: 100%;
+    page-break-inside: avoid;
+  }
+
+  table {
+    page-break-inside: avoid;
+  }
+}
