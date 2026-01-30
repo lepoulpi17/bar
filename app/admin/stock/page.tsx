@@ -41,6 +41,7 @@ import {
   AlertTriangle,
   TrendingUp,
   Package,
+  Search,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StockExportButton } from '@/components/stock-export-button';
@@ -103,6 +104,7 @@ export default function StockManagement() {
   const [initUnit, setInitUnit] = useState('ml');
   const [initMinThreshold, setInitMinThreshold] = useState('');
   const [initMaxThreshold, setInitMaxThreshold] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -323,6 +325,14 @@ export default function StockManagement() {
     }
   };
 
+  const filteredStocks = stocks.filter((stock) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      stock.ingredient.name.toLowerCase().includes(query) ||
+      stock.ingredient.category.toLowerCase().includes(query)
+    );
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -423,6 +433,22 @@ export default function StockManagement() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="mb-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Rechercher un ingrédient ou une catégorie..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  {searchQuery && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {filteredStocks.length} résultat{filteredStocks.length > 1 ? 's' : ''} trouvé{filteredStocks.length > 1 ? 's' : ''}
+                    </p>
+                  )}
+                </div>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -435,14 +461,14 @@ export default function StockManagement() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {stocks.length === 0 ? (
+                    {filteredStocks.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                          Aucun stock configuré
+                          {searchQuery ? 'Aucun résultat trouvé' : 'Aucun stock configuré'}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      stocks.map((stock) => {
+                      filteredStocks.map((stock) => {
                         const status = getStockStatus(stock);
                         return (
                           <TableRow key={stock.id} className={status === 'critical' ? 'bg-red-50' : ''}>
