@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
+import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024;
+const BUCKET_NAME = 'cocktail-images';
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,18 +35,27 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const uploadsDir = join(process.cwd(), 'public', 'uploads');
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    const ext = file.name.split('.').pop() || 'jpg';
+    const filename = `${uniqueSuffix}.${ext}`;
+
+    const { data, error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(filename, buffer, {
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (error) {
+      console.error('Erreur Supabase upload:', error);
+      return NextResponse.json({ error: 'Erreur lors de l\'upload' }, { status: 500 });
     }
 
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
-    const filename = `${uniqueSuffix}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
-    const filepath = join(uploadsDir, filename);
+    const { data: publicUrlData } = supabase.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(filename);
 
-    await writeFile(filepath, buffer);
-
-    const imageUrl = `/uploads/${filename}`;
+    const imageUrl = publicUrlData.publicUrl;
 
     return NextResponse.json({ imageUrl }, { status: 201 });
   } catch (error) {
