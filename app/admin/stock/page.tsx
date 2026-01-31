@@ -32,6 +32,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 import {
   ArrowLeft,
   Plus,
@@ -42,6 +43,11 @@ import {
   TrendingUp,
   Package,
   Search,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  BarChart3,
+  FileDown,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StockExportButton } from '@/components/stock-export-button';
@@ -146,28 +152,52 @@ export default function StockManagement() {
     return 'normal';
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStockPercentage = (stock: Stock): number => {
+    if (!stock.maxThreshold) return 100;
+    return Math.min((stock.quantity / stock.maxThreshold) * 100, 100);
+  };
+
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'critical':
-        return (
-          <Badge variant="destructive" className="gap-1">
-            <AlertTriangle className="h-3 w-3" />
-            Critique
-          </Badge>
-        );
+        return 'text-red-600';
       case 'low':
-        return (
-          <Badge variant="outline" className="gap-1 border-orange-500 text-orange-600">
-            <AlertTriangle className="h-3 w-3" />
-            Faible
-          </Badge>
-        );
+        return 'text-orange-600';
       default:
-        return (
-          <Badge variant="outline" className="gap-1 border-green-500 text-green-600">
-            OK
-          </Badge>
-        );
+        return 'text-green-600';
+    }
+  };
+
+  const getStatusBgColor = (status: string) => {
+    switch (status) {
+      case 'critical':
+        return 'bg-red-50 border-red-200';
+      case 'low':
+        return 'bg-orange-50 border-orange-200';
+      default:
+        return 'bg-green-50 border-green-200';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'critical':
+        return <XCircle className="h-5 w-5 text-red-600" />;
+      case 'low':
+        return <AlertCircle className="h-5 w-5 text-orange-600" />;
+      default:
+        return <CheckCircle2 className="h-5 w-5 text-green-600" />;
+    }
+  };
+
+  const getProgressColor = (status: string) => {
+    switch (status) {
+      case 'critical':
+        return 'bg-red-500';
+      case 'low':
+        return 'bg-orange-500';
+      default:
+        return 'bg-green-500';
     }
   };
 
@@ -335,37 +365,57 @@ export default function StockManagement() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 flex items-center justify-center">
         <div className="text-center">
-          <Package className="h-12 w-12 animate-pulse mx-auto mb-4 text-slate-400" />
-          <p className="text-muted-foreground">Chargement...</p>
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-2xl shadow-lg mx-auto w-fit mb-4">
+            <Package className="h-12 w-12 animate-pulse text-white" />
+          </div>
+          <p className="text-slate-700 font-medium">Chargement des stocks...</p>
         </div>
       </div>
     );
   }
 
+  const criticalCount = stocks.filter((s) => getStockStatus(s) === 'critical').length;
+  const lowCount = stocks.filter((s) => getStockStatus(s) === 'low').length;
+  const normalCount = stocks.filter((s) => getStockStatus(s) === 'normal').length;
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100">
+      <header className="bg-white/80 backdrop-blur-lg border-b border-slate-200 sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" onClick={() => router.push('/admin')}>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                onClick={() => router.push('/admin')}
+                className="hover:bg-blue-50"
+              >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Retour
               </Button>
-              <div>
-                <h1 className="text-2xl font-bold">Gestion des Stocks</h1>
-                <p className="text-sm text-muted-foreground">
-                  Suivez et gérez vos stocks d'ingrédients
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-2.5 rounded-xl shadow-md">
+                  <Package className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                    Gestion des Stocks
+                  </h1>
+                  <p className="text-sm text-slate-600">
+                    Suivez et gérez vos stocks d'ingrédients en temps réel
+                  </p>
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <StockExportButton stocks={stocks} />
-              <Button onClick={() => setShowInitDialog(true)}>
+              <Button
+                onClick={() => setShowInitDialog(true)}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md"
+              >
                 <Plus className="h-4 w-4 mr-2" />
-                Initialiser un stock
+                Nouveau stock
               </Button>
             </div>
           </div>
@@ -374,213 +424,315 @@ export default function StockManagement() {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="stocks" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="stocks" className="gap-2">
+          <TabsList className="bg-white/80 backdrop-blur-sm border border-slate-200 shadow-sm">
+            <TabsTrigger value="stocks" className="gap-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
               <Package className="h-4 w-4" />
               Stocks
             </TabsTrigger>
-            <TabsTrigger value="movements" className="gap-2">
+            <TabsTrigger value="movements" className="gap-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
               <History className="h-4 w-4" />
               Historique
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="stocks" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Total ingrédients
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{stocks.length}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Stocks critiques
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-red-600">
-                    {stocks.filter((s) => getStockStatus(s) === 'critical').length}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-slate-200 hover:shadow-xl transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-slate-600">Total Ingrédients</p>
+                      <p className="text-3xl font-bold text-slate-900">{stocks.length}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl">
+                      <Package className="h-6 w-6 text-white" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Stocks faibles
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-orange-600">
-                    {stocks.filter((s) => getStockStatus(s) === 'low').length}
+              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-green-200 hover:shadow-xl transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-green-700">Stocks OK</p>
+                      <p className="text-3xl font-bold text-green-600">{normalCount}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-500 to-green-600 p-3 rounded-xl">
+                      <CheckCircle2 className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-orange-200 hover:shadow-xl transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-orange-700">Stocks Faibles</p>
+                      <p className="text-3xl font-bold text-orange-600">{lowCount}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-3 rounded-xl">
+                      <AlertCircle className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-red-200 hover:shadow-xl transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-red-700">Stocks Critiques</p>
+                      <p className="text-3xl font-bold text-red-600">{criticalCount}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-red-500 to-red-600 p-3 rounded-xl">
+                      <XCircle className="h-6 w-6 text-white" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Liste des stocks</CardTitle>
-                <CardDescription>
-                  Gérez les quantités disponibles pour chaque ingrédient
-                </CardDescription>
+            <Card className="bg-white/80 backdrop-blur-sm shadow-xl border-slate-200">
+              <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-white to-slate-50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5 text-blue-600" />
+                      Vue d'ensemble des stocks
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                      Gérez les quantités disponibles pour chaque ingrédient
+                    </CardDescription>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="mb-4">
+              <CardContent className="pt-6">
+                <div className="mb-6">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
                       placeholder="Rechercher un ingrédient ou une catégorie..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 border-slate-300 focus:border-blue-400"
                     />
                   </div>
                   {searchQuery && (
-                    <p className="text-sm text-muted-foreground mt-2">
+                    <p className="text-sm text-slate-600 mt-2">
                       {filteredStocks.length} résultat{filteredStocks.length > 1 ? 's' : ''} trouvé{filteredStocks.length > 1 ? 's' : ''}
                     </p>
                   )}
                 </div>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Ingrédient</TableHead>
-                      <TableHead>Catégorie</TableHead>
-                      <TableHead className="text-right">Quantité</TableHead>
-                      <TableHead className="text-right">Seuil min.</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredStocks.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                          {searchQuery ? 'Aucun résultat trouvé' : 'Aucun stock configuré'}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredStocks.map((stock) => {
-                        const status = getStockStatus(stock);
-                        return (
-                          <TableRow key={stock.id} className={status === 'critical' ? 'bg-red-50' : ''}>
-                            <TableCell className="font-medium">
-                              {stock.ingredient.name}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {stock.ingredient.category}
-                            </TableCell>
-                            <TableCell className="text-right font-semibold">
-                              {stock.quantity} {stock.unit}
-                            </TableCell>
-                            <TableCell className="text-right text-muted-foreground">
-                              {stock.minThreshold
-                                ? `${stock.minThreshold} ${stock.unit}`
-                                : '-'}
-                            </TableCell>
-                            <TableCell>{getStatusBadge(status)}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openMovementDialog(stock, 'restock')}
-                                  className="gap-1"
-                                >
-                                  <Plus className="h-3 w-3" />
-                                  Ajouter
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openMovementDialog(stock, 'usage')}
-                                  className="gap-1"
-                                >
-                                  <Minus className="h-3 w-3" />
-                                  Retirer
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => openConfigDialog(stock)}
-                                >
-                                  <Settings className="h-4 w-4" />
-                                </Button>
+
+                <div className="space-y-3">
+                  {filteredStocks.length === 0 ? (
+                    <div className="text-center py-12 text-slate-400">
+                      <Package className="h-16 w-16 mx-auto mb-4 opacity-20" />
+                      <p className="text-lg font-medium">
+                        {searchQuery ? 'Aucun résultat trouvé' : 'Aucun stock configuré'}
+                      </p>
+                    </div>
+                  ) : (
+                    filteredStocks.map((stock) => {
+                      const status = getStockStatus(stock);
+                      const percentage = getStockPercentage(stock);
+                      return (
+                        <div
+                          key={stock.id}
+                          className={`p-4 rounded-xl border-2 transition-all hover:shadow-md ${getStatusBgColor(
+                            status
+                          )}`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-3 flex-1">
+                              <div className="mt-1">{getStatusIcon(status)}</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="font-semibold text-slate-900 text-lg">
+                                    {stock.ingredient.name}
+                                  </h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {stock.ingredient.category}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm mb-3">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-slate-600">Quantité:</span>
+                                    <span className={`font-bold text-lg ${getStatusColor(status)}`}>
+                                      {stock.quantity} {stock.unit}
+                                    </span>
+                                  </div>
+                                  {stock.minThreshold && (
+                                    <div className="flex items-center gap-1 text-slate-600">
+                                      <span>Seuil min:</span>
+                                      <span className="font-medium">
+                                        {stock.minThreshold} {stock.unit}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                                {stock.maxThreshold && (
+                                  <div className="space-y-1">
+                                    <div className="flex items-center justify-between text-xs text-slate-600">
+                                      <span>Niveau de stock</span>
+                                      <span className="font-medium">{Math.round(percentage)}%</span>
+                                    </div>
+                                    <div className="relative h-2 bg-slate-200 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full transition-all duration-500 ${getProgressColor(
+                                          status
+                                        )}`}
+                                        style={{ width: `${percentage}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
                               </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openMovementDialog(stock, 'restock')}
+                                className="gap-1 bg-white hover:bg-green-50 hover:border-green-400 hover:text-green-700"
+                              >
+                                <Plus className="h-4 w-4" />
+                                Ajouter
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openMovementDialog(stock, 'usage')}
+                                className="gap-1 bg-white hover:bg-orange-50 hover:border-orange-400 hover:text-orange-700"
+                              >
+                                <Minus className="h-4 w-4" />
+                                Retirer
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openConfigDialog(stock)}
+                                className="hover:bg-blue-50 hover:text-blue-700"
+                              >
+                                <Settings className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="movements">
-            <Card>
-              <CardHeader>
-                <CardTitle>Historique des mouvements</CardTitle>
-                <CardDescription>
+            <Card className="bg-white/80 backdrop-blur-sm shadow-xl border-slate-200">
+              <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-white to-slate-50">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <History className="h-5 w-5 text-blue-600" />
+                  Historique des mouvements
+                </CardTitle>
+                <CardDescription className="mt-1">
                   Consultez tous les mouvements de stock enregistrés
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Ingrédient</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead className="text-right">Quantité</TableHead>
-                      <TableHead>Raison</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {movements.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                          Aucun mouvement enregistré
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      movements.map((movement) => (
-                        <TableRow key={movement.id}>
-                          <TableCell className="text-muted-foreground">
-                            {new Date(movement.createdAt).toLocaleString('fr-FR')}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {movement.stock?.ingredient.name}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {getMovementTypeBadge(movement.type)}
-                              <span>{getMovementTypeLabel(movement.type)}</span>
+              <CardContent className="pt-6">
+                {movements.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400">
+                    <History className="h-16 w-16 mx-auto mb-4 opacity-20" />
+                    <p className="text-lg font-medium">Aucun mouvement enregistré</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {movements.map((movement) => {
+                      const isPositive = movement.type === 'restock' || movement.type === 'adjustment';
+                      return (
+                        <div
+                          key={movement.id}
+                          className="p-4 rounded-xl border-2 border-slate-200 bg-white hover:shadow-md transition-all"
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 flex-1">
+                              <div>
+                                {movement.type === 'restock' && (
+                                  <div className="bg-gradient-to-br from-green-500 to-green-600 p-2.5 rounded-lg">
+                                    <Plus className="h-5 w-5 text-white" />
+                                  </div>
+                                )}
+                                {movement.type === 'usage' && (
+                                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-2.5 rounded-lg">
+                                    <Minus className="h-5 w-5 text-white" />
+                                  </div>
+                                )}
+                                {movement.type === 'waste' && (
+                                  <div className="bg-gradient-to-br from-red-500 to-red-600 p-2.5 rounded-lg">
+                                    <XCircle className="h-5 w-5 text-white" />
+                                  </div>
+                                )}
+                                {movement.type === 'adjustment' && (
+                                  <div className="bg-gradient-to-br from-slate-500 to-slate-600 p-2.5 rounded-lg">
+                                    <Settings className="h-5 w-5 text-white" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="font-semibold text-slate-900">
+                                    {movement.stock?.ingredient.name}
+                                  </h3>
+                                  <Badge
+                                    variant={isPositive ? 'default' : 'secondary'}
+                                    className={
+                                      isPositive
+                                        ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                                        : 'bg-slate-100 text-slate-800'
+                                    }
+                                  >
+                                    {getMovementTypeLabel(movement.type)}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-3 text-sm text-slate-600">
+                                  <span className="flex items-center gap-1">
+                                    <History className="h-3 w-3" />
+                                    {new Date(movement.createdAt).toLocaleString('fr-FR', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
+                                  </span>
+                                  {movement.reason && (
+                                    <span className="text-slate-500 italic">
+                                      &bull; {movement.reason}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </TableCell>
-                          <TableCell className="text-right font-semibold">
-                            {movement.type === 'restock' || movement.type === 'adjustment'
-                              ? '+'
-                              : '-'}
-                            {movement.quantity} {movement.unit}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {movement.reason || '-'}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                            <div
+                              className={`text-right px-4 py-2 rounded-lg ${
+                                isPositive
+                                  ? 'bg-green-50 text-green-700'
+                                  : 'bg-orange-50 text-orange-700'
+                              }`}
+                            >
+                              <span className="text-2xl font-bold">
+                                {isPositive ? '+' : '-'}
+                                {movement.quantity}
+                              </span>
+                              <span className="text-sm ml-1">{movement.unit}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -588,60 +740,106 @@ export default function StockManagement() {
       </div>
 
       <Dialog open={showMovementDialog} onOpenChange={setShowMovementDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>
-              {movementType === 'restock' && 'Ajouter du stock'}
-              {movementType === 'usage' && 'Retirer du stock'}
-              {movementType === 'waste' && 'Déclarer une perte'}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedStock?.ingredient.name}
-            </DialogDescription>
+            <div className="flex items-center gap-3">
+              {movementType === 'restock' && (
+                <div className="bg-gradient-to-br from-green-500 to-green-600 p-3 rounded-xl">
+                  <Plus className="h-6 w-6 text-white" />
+                </div>
+              )}
+              {movementType === 'usage' && (
+                <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-3 rounded-xl">
+                  <Minus className="h-6 w-6 text-white" />
+                </div>
+              )}
+              {movementType === 'waste' && (
+                <div className="bg-gradient-to-br from-red-500 to-red-600 p-3 rounded-xl">
+                  <XCircle className="h-6 w-6 text-white" />
+                </div>
+              )}
+              <div>
+                <DialogTitle className="text-xl">
+                  {movementType === 'restock' && 'Ajouter du stock'}
+                  {movementType === 'usage' && 'Retirer du stock'}
+                  {movementType === 'waste' && 'Déclarer une perte'}
+                </DialogTitle>
+                <DialogDescription className="mt-1">
+                  {selectedStock?.ingredient.name}
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Quantité ({selectedStock?.unit})</Label>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="quantity" className="text-sm font-medium">
+                Quantité ({selectedStock?.unit})
+              </Label>
               <Input
+                id="quantity"
                 type="number"
                 value={movementQuantity}
                 onChange={(e) => setMovementQuantity(e.target.value)}
                 placeholder="0"
                 min="0"
                 step="0.01"
+                className="border-slate-300 focus:border-blue-400"
               />
             </div>
-            <div>
-              <Label>Raison (optionnel)</Label>
+            <div className="space-y-2">
+              <Label htmlFor="reason" className="text-sm font-medium">
+                Raison (optionnel)
+              </Label>
               <Textarea
+                id="reason"
                 value={movementReason}
                 onChange={(e) => setMovementReason(e.target.value)}
                 placeholder="Ex: Réception commande, Cocktail Mojito, Bouteille cassée..."
+                className="border-slate-300 focus:border-blue-400 resize-none"
+                rows={3}
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowMovementDialog(false)}>
+          <DialogFooter className="pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowMovementDialog(false)}
+              className="hover:bg-slate-50"
+            >
               Annuler
             </Button>
-            <Button onClick={handleMovement}>Enregistrer</Button>
+            <Button
+              onClick={handleMovement}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+            >
+              Enregistrer
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Configuration du stock</DialogTitle>
-            <DialogDescription>
-              {selectedStock?.ingredient.name}
-            </DialogDescription>
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl">
+                <Settings className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl">Configuration du stock</DialogTitle>
+                <DialogDescription className="mt-1">
+                  {selectedStock?.ingredient.name}
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Unité</Label>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="unit" className="text-sm font-medium">
+                Unité de mesure
+              </Label>
               <Select value={configUnit} onValueChange={setConfigUnit}>
-                <SelectTrigger>
+                <SelectTrigger id="unit" className="border-slate-300 focus:border-blue-400">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -654,120 +852,186 @@ export default function StockManagement() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Seuil minimum (alerte)</Label>
+            <div className="space-y-2">
+              <Label htmlFor="minThreshold" className="text-sm font-medium">
+                Seuil minimum (alerte)
+              </Label>
               <Input
+                id="minThreshold"
                 type="number"
                 value={configMinThreshold}
                 onChange={(e) => setConfigMinThreshold(e.target.value)}
                 placeholder="Ex: 500"
                 min="0"
                 step="0.01"
+                className="border-slate-300 focus:border-blue-400"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Une alerte sera affichée si le stock descend en dessous
+              <p className="text-xs text-slate-500">
+                Une alerte sera affichée si le stock descend en dessous de cette valeur
               </p>
             </div>
-            <div>
-              <Label>Seuil maximum (optionnel)</Label>
+            <div className="space-y-2">
+              <Label htmlFor="maxThreshold" className="text-sm font-medium">
+                Seuil maximum (optionnel)
+              </Label>
               <Input
+                id="maxThreshold"
                 type="number"
                 value={configMaxThreshold}
                 onChange={(e) => setConfigMaxThreshold(e.target.value)}
                 placeholder="Ex: 5000"
                 min="0"
                 step="0.01"
+                className="border-slate-300 focus:border-blue-400"
               />
+              <p className="text-xs text-slate-500">
+                Utilisé pour calculer la barre de progression du niveau de stock
+              </p>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfigDialog(false)}>
+          <DialogFooter className="pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowConfigDialog(false)}
+              className="hover:bg-slate-50"
+            >
               Annuler
             </Button>
-            <Button onClick={handleUpdateConfig}>Enregistrer</Button>
+            <Button
+              onClick={handleUpdateConfig}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+            >
+              Enregistrer
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={showInitDialog} onOpenChange={setShowInitDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Initialiser un nouveau stock</DialogTitle>
-            <DialogDescription>
-              Configurer le suivi de stock pour un ingrédient
-            </DialogDescription>
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl">
+                <Plus className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl">Initialiser un nouveau stock</DialogTitle>
+                <DialogDescription className="mt-1">
+                  Configurez le suivi de stock pour un ingrédient
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Ingrédient</Label>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="ingredient" className="text-sm font-medium">
+                Ingrédient <span className="text-red-500">*</span>
+              </Label>
               <Select value={initIngredientId} onValueChange={setInitIngredientId}>
-                <SelectTrigger>
+                <SelectTrigger id="ingredient" className="border-slate-300 focus:border-blue-400">
                   <SelectValue placeholder="Sélectionner un ingrédient" />
                 </SelectTrigger>
                 <SelectContent>
                   {ingredientsWithoutStock.map((ingredient) => (
                     <SelectItem key={ingredient.id} value={ingredient.id}>
-                      {ingredient.name} ({ingredient.category})
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{ingredient.name}</span>
+                        <span className="text-xs text-slate-500">({ingredient.category})</span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Unité</Label>
-              <Select value={initUnit} onValueChange={setInitUnit}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ml">ml (millilitres)</SelectItem>
-                  <SelectItem value="cl">cl (centilitres)</SelectItem>
-                  <SelectItem value="L">L (litres)</SelectItem>
-                  <SelectItem value="g">g (grammes)</SelectItem>
-                  <SelectItem value="kg">kg (kilogrammes)</SelectItem>
-                  <SelectItem value="unité">unité</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="init-unit" className="text-sm font-medium">
+                  Unité <span className="text-red-500">*</span>
+                </Label>
+                <Select value={initUnit} onValueChange={setInitUnit}>
+                  <SelectTrigger id="init-unit" className="border-slate-300 focus:border-blue-400">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ml">ml (millilitres)</SelectItem>
+                    <SelectItem value="cl">cl (centilitres)</SelectItem>
+                    <SelectItem value="L">L (litres)</SelectItem>
+                    <SelectItem value="g">g (grammes)</SelectItem>
+                    <SelectItem value="kg">kg (kilogrammes)</SelectItem>
+                    <SelectItem value="unité">unité</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="init-quantity" className="text-sm font-medium">
+                  Quantité initiale
+                </Label>
+                <Input
+                  id="init-quantity"
+                  type="number"
+                  value={initQuantity}
+                  onChange={(e) => setInitQuantity(e.target.value)}
+                  placeholder="0"
+                  min="0"
+                  step="0.01"
+                  className="border-slate-300 focus:border-blue-400"
+                />
+              </div>
             </div>
-            <div>
-              <Label>Quantité initiale (optionnel)</Label>
-              <Input
-                type="number"
-                value={initQuantity}
-                onChange={(e) => setInitQuantity(e.target.value)}
-                placeholder="0"
-                min="0"
-                step="0.01"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="init-min" className="text-sm font-medium">
+                  Seuil minimum
+                </Label>
+                <Input
+                  id="init-min"
+                  type="number"
+                  value={initMinThreshold}
+                  onChange={(e) => setInitMinThreshold(e.target.value)}
+                  placeholder="Ex: 500"
+                  min="0"
+                  step="0.01"
+                  className="border-slate-300 focus:border-blue-400"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="init-max" className="text-sm font-medium">
+                  Seuil maximum
+                </Label>
+                <Input
+                  id="init-max"
+                  type="number"
+                  value={initMaxThreshold}
+                  onChange={(e) => setInitMaxThreshold(e.target.value)}
+                  placeholder="Ex: 5000"
+                  min="0"
+                  step="0.01"
+                  className="border-slate-300 focus:border-blue-400"
+                />
+              </div>
             </div>
-            <div>
-              <Label>Seuil minimum</Label>
-              <Input
-                type="number"
-                value={initMinThreshold}
-                onChange={(e) => setInitMinThreshold(e.target.value)}
-                placeholder="Ex: 500"
-                min="0"
-                step="0.01"
-              />
-            </div>
-            <div>
-              <Label>Seuil maximum (optionnel)</Label>
-              <Input
-                type="number"
-                value={initMaxThreshold}
-                onChange={(e) => setInitMaxThreshold(e.target.value)}
-                placeholder="Ex: 5000"
-                min="0"
-                step="0.01"
-              />
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-xs text-blue-900">
+                Les seuils permettent de visualiser le niveau de stock et recevoir des alertes automatiques.
+              </p>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowInitDialog(false)}>
+          <DialogFooter className="pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowInitDialog(false)}
+              className="hover:bg-slate-50"
+            >
               Annuler
             </Button>
-            <Button onClick={handleInitStock}>Initialiser</Button>
+            <Button
+              onClick={handleInitStock}
+              disabled={!initIngredientId}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Initialiser
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
