@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Wine, Package, Martini, Users, ArrowLeft, LogOut, BarChart3, Activity, TrendingUp, Eye, Settings, AlertTriangle } from 'lucide-react';
+import { Wine, Package, Martini, Users, ArrowLeft, LogOut, BarChart3, Activity, TrendingUp, Eye, Settings, AlertTriangle, DollarSign, Calendar } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface Stats {
   overview: {
@@ -27,6 +28,17 @@ interface Stats {
     quantity: number;
     unit: string;
     minThreshold: number;
+  }>;
+  viewsByDay: Array<{
+    date: string;
+    views: number;
+  }>;
+  movementsByDay: Array<{
+    date: string;
+    restocks: number;
+    usage: number;
+    waste: number;
+    total: number;
   }>;
 }
 
@@ -143,6 +155,87 @@ export default function AdminDashboard() {
                   </p>
                 </CardContent>
               </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {stats.viewsByDay && stats.viewsByDay.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Eye className="h-5 w-5" />
+                      Évolution des vues
+                    </CardTitle>
+                    <CardDescription>Nombre de consultations de cocktails sur 30 jours</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <LineChart data={stats.viewsByDay}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="date"
+                          tickFormatter={(date) => {
+                            const d = new Date(date);
+                            return `${d.getDate()}/${d.getMonth() + 1}`;
+                          }}
+                        />
+                        <YAxis />
+                        <Tooltip
+                          labelFormatter={(label) => {
+                            const d = new Date(label);
+                            return d.toLocaleDateString('fr-FR');
+                          }}
+                        />
+                        <Legend />
+                        <Line
+                          type="monotone"
+                          dataKey="views"
+                          name="Vues"
+                          stroke="#f59e0b"
+                          strokeWidth={2}
+                          dot={{ fill: '#f59e0b' }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {stats.movementsByDay && stats.movementsByDay.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Activity className="h-5 w-5" />
+                      Mouvements de stock
+                    </CardTitle>
+                    <CardDescription>Activité de gestion des stocks sur 30 jours</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <BarChart data={stats.movementsByDay}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="date"
+                          tickFormatter={(date) => {
+                            const d = new Date(date);
+                            return `${d.getDate()}/${d.getMonth() + 1}`;
+                          }}
+                        />
+                        <YAxis />
+                        <Tooltip
+                          labelFormatter={(label) => {
+                            const d = new Date(label);
+                            return d.toLocaleDateString('fr-FR');
+                          }}
+                        />
+                        <Legend />
+                        <Bar dataKey="restocks" name="Réappro." fill="#22c55e" />
+                        <Bar dataKey="usage" name="Utilisation" fill="#3b82f6" />
+                        <Bar dataKey="waste" name="Perte" fill="#ef4444" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {stats.popularCocktails.length > 0 && (
@@ -328,6 +421,42 @@ export default function AdminDashboard() {
             <CardContent>
               <p className="text-sm text-muted-foreground">
                 Mode maintenance et autres paramètres système
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
+            onClick={() => router.push('/admin/costs')}
+          >
+            <CardHeader>
+              <div className="bg-green-500 p-3 rounded-lg w-fit mb-3">
+                <DollarSign className="h-6 w-6 text-white" />
+              </div>
+              <CardTitle>Analyse des Coûts</CardTitle>
+              <CardDescription>Rentabilité</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Calculer les coûts de revient et prix de vente suggérés
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
+            onClick={() => router.push('/admin/restock')}
+          >
+            <CardHeader>
+              <div className="bg-cyan-500 p-3 rounded-lg w-fit mb-3">
+                <Calendar className="h-6 w-6 text-white" />
+              </div>
+              <CardTitle>Réapprovisionnement</CardTitle>
+              <CardDescription>Planning</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Planifier et suivre les commandes fournisseurs
               </p>
             </CardContent>
           </Card>

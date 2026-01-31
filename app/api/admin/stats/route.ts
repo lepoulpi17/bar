@@ -13,6 +13,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
+    const now = new Date();
+    const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
     const [
       totalCocktails,
       totalIngredients,
@@ -22,6 +26,8 @@ export async function GET() {
       recentViews,
       popularCocktails,
       stockAlerts,
+      viewsLast30Days,
+      stockMovementsLast30Days,
     ] = await Promise.all([
       prisma.cocktail.count(),
       prisma.ingredient.count(),
@@ -38,7 +44,7 @@ export async function GET() {
       prisma.cocktailView.count({
         where: {
           viewedAt: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+            gte: last7Days,
           },
         },
       }),
@@ -60,6 +66,27 @@ export async function GET() {
         },
         take: 10,
       }),
+      prisma.cocktailView.findMany({
+        where: {
+          viewedAt: {
+            gte: last30Days,
+          },
+        },
+        select: {
+          viewedAt: true,
+        },
+      }),
+      prisma.stockMovement.findMany({
+        where: {
+          createdAt: {
+            gte: last30Days,
+          },
+        },
+        select: {
+          type: true,
+          createdAt: true,
+        },
+      }),
     ]);
 
     const cocktailIds = popularCocktails.map((v) => v.cocktailId);
@@ -75,6 +102,43 @@ export async function GET() {
         name: cocktail?.name || 'Unknown',
         imageUrl: cocktail?.imageUrl,
         views: view._count.cocktailId,
+      };
+    });
+
+    const viewsByDay = Array.from({ length: 30 }, (_, i) => {
+      const date = new Date(now.getTime() - (29 - i) * 24 * 60 * 60 * 1000);
+      const dayStart = new Date(date.setHours(0, 0, 0, 0));
+      const dayEnd = new Date(date.setHours(23, 59, 59, 999));
+
+      const count = viewsLast30Days.filter(
+        (v) => v.viewedAt >= dayStart && v.viewedAt <= dayEnd
+      ).length;
+
+      return {
+        date: dayStart.toISOString().split('T')[0],
+        views: count,
+      };
+    });
+
+    const movementsByDay = Array.from({ length: 30 }, (_, i) => {
+      const date = new Date(now.getTime() - (29 - i) * 24 * 60 * 60 * 1000);
+      const dayStart = new Date(date.setHours(0, 0, 0, 0));
+      const dayEnd = new Date(date.setHours(23, 59, 59, 999));
+
+      const dayMovements = stockMovementsLast30Days.filter(
+        (m) => m.createdAt >= dayStart && m.createdAt <= dayEnd
+      );
+
+      const restocks = dayMovements.filter((m) => m.type === 'restock').length;
+      const usage = dayMovements.filter((m) => m.type === 'usage').length;
+      const waste = dayMovements.filter((m) => m.type === 'waste').length;
+
+      return {
+        date: dayStart.toISOString().split('T')[0],
+        restocks,
+        usage,
+        waste,
+        total: dayMovements.length,
       };
     });
 
@@ -95,6 +159,8 @@ export async function GET() {
         unit: stock.unit,
         minThreshold: stock.minThreshold,
       })),
+      viewsByDay,
+      movementsByDay,
     });
   } catch (error) {
     console.error('Erreur récupération stats:', error);

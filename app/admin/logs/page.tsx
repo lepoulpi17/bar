@@ -20,7 +20,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, Activity, Filter } from 'lucide-react';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import { ArrowLeft, Activity, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface AuditLog {
@@ -50,21 +59,28 @@ export default function AuditLogsPage() {
   const [loading, setLoading] = useState(true);
   const [filterAction, setFilterAction] = useState<string>('all');
   const [filterEntity, setFilterEntity] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalLogs, setTotalLogs] = useState(0);
+  const logsPerPage = 50;
 
   useEffect(() => {
     loadLogs();
-  }, [filterAction, filterEntity]);
+  }, [filterAction, filterEntity, currentPage]);
 
   const loadLogs = async () => {
+    setLoading(true);
     try {
-      let url = '/api/admin/audit-logs?limit=200';
+      let url = `/api/admin/audit-logs?page=${currentPage}&limit=${logsPerPage}`;
       if (filterAction !== 'all') url += `&action=${filterAction}`;
       if (filterEntity !== 'all') url += `&entityType=${filterEntity}`;
 
       const res = await fetch(url);
       if (!res.ok) throw new Error();
       const data = await res.json();
-      setLogs(data);
+      setLogs(data.logs);
+      setTotalPages(data.pagination.totalPages);
+      setTotalLogs(data.pagination.total);
     } catch (error) {
       toast({
         title: 'Erreur',
@@ -74,6 +90,12 @@ export default function AuditLogsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFilterChange = (action: string, entity: string) => {
+    setFilterAction(action);
+    setFilterEntity(entity);
+    setCurrentPage(1);
   };
 
   const getActionLabel = (action: string) => {
@@ -145,7 +167,7 @@ export default function AuditLogsPage() {
             <Filter className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">Filtres:</span>
           </div>
-          <Select value={filterAction} onValueChange={setFilterAction}>
+          <Select value={filterAction} onValueChange={(value) => handleFilterChange(value, filterEntity)}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Type d'action" />
             </SelectTrigger>
@@ -159,7 +181,7 @@ export default function AuditLogsPage() {
               <SelectItem value="cocktail_updated">Cocktail modifié</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={filterEntity} onValueChange={setFilterEntity}>
+          <Select value={filterEntity} onValueChange={(value) => handleFilterChange(filterAction, value)}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Type d'entité" />
             </SelectTrigger>
@@ -175,10 +197,7 @@ export default function AuditLogsPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setFilterAction('all');
-                setFilterEntity('all');
-              }}
+              onClick={() => handleFilterChange('all', 'all')}
             >
               Réinitialiser
             </Button>
@@ -189,7 +208,7 @@ export default function AuditLogsPage() {
           <CardHeader>
             <CardTitle>Historique des actions</CardTitle>
             <CardDescription>
-              {logs.length} entrées - Les 200 dernières actions
+              {totalLogs} entrées au total - Page {currentPage} sur {totalPages}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -260,6 +279,60 @@ export default function AuditLogsPage() {
                 )}
               </TableBody>
             </Table>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-6">
+                <div className="text-sm text-muted-foreground">
+                  Affichage de {(currentPage - 1) * logsPerPage + 1} à{' '}
+                  {Math.min(currentPage * logsPerPage, totalLogs)} sur {totalLogs} entrées
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Précédent
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum: number;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className="w-10"
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Suivant
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
