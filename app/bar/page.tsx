@@ -40,6 +40,8 @@ export default function BarPage() {
   const [cocktails, setCocktails] = useState<Cocktail[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [ingredientsFilter, setIngredientsFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('');
+  const [spiritFilter, setSpiritFilter] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -95,8 +97,17 @@ export default function BarPage() {
 
     const matchesIngredients = canMakeCocktail(cocktail, availableIngredients);
 
-    return matchesSearch && matchesIngredients;
+    const matchesType = !typeFilter || cocktail.type === typeFilter;
+
+    const matchesSpirit = !spiritFilter || cocktail.baseSpirit === spiritFilter;
+
+    return matchesSearch && matchesIngredients && matchesType && matchesSpirit;
   });
+
+  const cocktailTypes = Array.from(new Set(cocktails.map((c) => c.type))).sort();
+  const baseSpirits = Array.from(
+    new Set(cocktails.map((c) => c.baseSpirit).filter(Boolean))
+  ).sort();
 
   if (loading) {
     return (
@@ -226,6 +237,81 @@ export default function BarPage() {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="shadow-xl border-slate-200 bg-white/80 backdrop-blur-sm mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5 text-amber-500" />
+              Filtres rapides
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium mb-2 text-slate-700">Type de cocktail</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={!typeFilter ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTypeFilter('')}
+                    className={!typeFilter ? 'bg-amber-500 hover:bg-amber-600' : ''}
+                  >
+                    Tous
+                  </Button>
+                  {cocktailTypes.map((type) => (
+                    <Button
+                      key={type}
+                      variant={typeFilter === type ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTypeFilter(typeFilter === type ? '' : type)}
+                      className={typeFilter === type ? 'bg-amber-500 hover:bg-amber-600' : ''}
+                    >
+                      {type}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium mb-2 text-slate-700">Base spiritueuse</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={!spiritFilter ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSpiritFilter('')}
+                    className={!spiritFilter ? 'bg-amber-500 hover:bg-amber-600' : ''}
+                  >
+                    Toutes
+                  </Button>
+                  {baseSpirits.map((spirit) => (
+                    <Button
+                      key={spirit}
+                      variant={spiritFilter === spirit ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setSpiritFilter(spiritFilter === spirit ? '' : spirit!)}
+                      className={spiritFilter === spirit ? 'bg-amber-500 hover:bg-amber-600' : ''}
+                    >
+                      {spirit}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              {(typeFilter || spiritFilter) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setTypeFilter('');
+                    setSpiritFilter('');
+                  }}
+                  className="text-red-600 border-red-300 hover:bg-red-50"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Réinitialiser les filtres
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {availableIngredients.length > 0 && (
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">

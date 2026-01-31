@@ -16,30 +16,44 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
     const entityType = searchParams.get('entityType');
-    const limit = parseInt(searchParams.get('limit') || '100');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (action) where.action = action;
-    if (entityType) where.entityType = entityType;
+    if (action && action !== 'all') where.action = action;
+    if (entityType && entityType !== 'all') where.entityType = entityType;
 
-    const logs = await prisma.auditLog.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            email: true,
-            name: true,
-            role: true,
+    const [logs, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              email: true,
+              name: true,
+              role: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: limit,
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: limit,
+        skip,
+      }),
+      prisma.auditLog.count({ where }),
+    ]);
 
-    return NextResponse.json(logs);
+    return NextResponse.json({
+      logs,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error('Erreur récupération logs:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
