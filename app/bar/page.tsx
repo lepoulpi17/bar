@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Wine, Search, LogOut, Settings, User } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Wine, Search, LogOut, Settings, User, Filter, X } from 'lucide-react';
 
 type CocktailIngredient = {
   quantity: number | null;
@@ -38,6 +39,7 @@ export default function BarPage() {
   const router = useRouter();
   const [cocktails, setCocktails] = useState<Cocktail[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [ingredientsFilter, setIngredientsFilter] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -62,11 +64,39 @@ export default function BarPage() {
     }
   };
 
-  const filteredCocktails = cocktails.filter(cocktail =>
-    cocktail.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cocktail.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cocktail.baseSpirit?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const parseAvailableIngredients = (text: string): string[] => {
+    return text
+      .split(',')
+      .map(ing => ing.trim().toLowerCase())
+      .filter(ing => ing.length > 0);
+  };
+
+  const canMakeCocktail = (cocktail: Cocktail, availableIngredients: string[]): boolean => {
+    if (availableIngredients.length === 0) return true;
+
+    const requiredIngredients = cocktail.ingredients
+      .filter(ci => !ci.isOptional)
+      .map(ci => ci.ingredient.name.toLowerCase());
+
+    return requiredIngredients.every(required =>
+      availableIngredients.some(available =>
+        required.includes(available) || available.includes(required)
+      )
+    );
+  };
+
+  const availableIngredients = parseAvailableIngredients(ingredientsFilter);
+
+  const filteredCocktails = cocktails.filter(cocktail => {
+    const matchesSearch =
+      cocktail.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cocktail.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cocktail.baseSpirit?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesIngredients = canMakeCocktail(cocktail, availableIngredients);
+
+    return matchesSearch && matchesIngredients;
+  });
 
   if (loading) {
     return (
@@ -135,25 +165,75 @@ export default function BarPage() {
       </header>
 
       <div className="container mx-auto px-4 py-6 max-w-7xl">
-        <Card className="mb-6 shadow-xl border-slate-200 bg-white/80 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="inline-block w-1 h-6 bg-gradient-to-b from-amber-500 to-amber-600 rounded-full"></span>
-              Rechercher
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Rechercher un cocktail par nom, type ou base..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-slate-200 focus:border-amber-400"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <Card className="shadow-xl border-slate-200 bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-5 w-5 text-amber-500" />
+                Rechercher un cocktail
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="relative">
+                <Input
+                  placeholder="Nom, type ou base spiritueuse..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="border-slate-200 focus:border-amber-400"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-xl border-slate-200 bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="h-5 w-5 text-amber-500" />
+                Filtrer par ingrédients
+              </CardTitle>
+              <CardDescription>
+                Tapez vos ingrédients disponibles séparés par des virgules
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="relative">
+                <Textarea
+                  placeholder="Ex: vodka, jus de citron, sucre, menthe..."
+                  value={ingredientsFilter}
+                  onChange={(e) => setIngredientsFilter(e.target.value)}
+                  className="border-slate-200 focus:border-amber-400 min-h-[60px] resize-none"
+                />
+                {ingredientsFilter && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIngredientsFilter('')}
+                    className="absolute top-2 right-2 h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              {availableIngredients.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {availableIngredients.map((ing, idx) => (
+                    <Badge key={idx} variant="secondary" className="bg-amber-100 text-amber-800">
+                      {ing}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {availableIngredients.length > 0 && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-sm text-amber-900">
+              <span className="font-semibold">{filteredCocktails.length}</span> cocktail(s) peuvent être préparés avec vos ingrédients
+            </p>
+          </div>
+        )}
 
         {filteredCocktails.length === 0 ? (
           <div className="text-center py-16 text-slate-400">
