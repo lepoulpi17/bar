@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Wine, Package, Martini, Users, ArrowLeft, LogOut, BarChart3, Activity, TrendingUp, Eye, Settings, AlertTriangle, DollarSign, Calendar } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Package, Martini, Users, ArrowLeft, LogOut, BarChart3, Activity, Settings, AlertTriangle, DollarSign, Calendar } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface Stats {
   overview: {
@@ -14,14 +14,9 @@ interface Stats {
     totalIngredients: number;
     totalUsers: number;
     lowStockCount: number;
-    totalViews: number;
-    recentViews: number;
+    totalStockValue: number;
+    availableIngredientsCount: number;
   };
-  popularCocktails: Array<{
-    id: string;
-    name: string;
-    views: number;
-  }>;
   stockAlerts: Array<{
     id: string;
     ingredientName: string;
@@ -29,16 +24,19 @@ interface Stats {
     unit: string;
     minThreshold: number;
   }>;
-  viewsByDay: Array<{
-    date: string;
-    views: number;
-  }>;
   movementsByDay: Array<{
     date: string;
     restocks: number;
     usage: number;
     waste: number;
     total: number;
+  }>;
+  recentActivity: Array<{
+    id: string;
+    action: string;
+    userEmail: string;
+    entityName: string;
+    createdAt: string;
   }>;
 }
 
@@ -102,104 +100,59 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription>Total cocktails</CardDescription>
+                  <CardDescription>Cocktails</CardDescription>
                   <CardTitle className="text-3xl">{stats.overview.totalCocktails}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-xs text-muted-foreground">
-                    Recettes disponibles
+                    Recettes dans le catalogue
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription>Total ingrédients</CardDescription>
+                  <CardDescription>Ingrédients</CardDescription>
                   <CardTitle className="text-3xl">{stats.overview.totalIngredients}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-xs text-muted-foreground">
-                    Dans le catalogue
+                    {stats.overview.availableIngredientsCount} disponibles au bar
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription>Vues (7 jours)</CardDescription>
-                  <CardTitle className="text-3xl flex items-center gap-2">
-                    {stats.overview.recentViews}
-                    <Eye className="h-5 w-5 text-muted-foreground" />
-                  </CardTitle>
+                  <CardDescription>Utilisateurs</CardDescription>
+                  <CardTitle className="text-3xl">{stats.overview.totalUsers}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-xs text-muted-foreground">
-                    Total: {stats.overview.totalViews} vues
+                    Comptes actifs
                   </p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className={stats.overview.lowStockCount > 0 ? "border-amber-500/50" : ""}>
                 <CardHeader className="pb-2">
-                  <CardDescription>Alertes stock</CardDescription>
+                  <CardDescription>Stock</CardDescription>
                   <CardTitle className="text-3xl flex items-center gap-2">
                     {stats.overview.lowStockCount}
                     {stats.overview.lowStockCount > 0 && (
-                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                      <AlertTriangle className="h-5 w-5 text-amber-500" />
                     )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-xs text-muted-foreground">
-                    Ingrédients en stock faible
+                    Alertes de stock bas
                   </p>
                 </CardContent>
               </Card>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {stats.viewsByDay && stats.viewsByDay.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Eye className="h-5 w-5" />
-                      Évolution des vues
-                    </CardTitle>
-                    <CardDescription>Nombre de consultations de cocktails sur 30 jours</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={250}>
-                      <LineChart data={stats.viewsByDay}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis
-                          dataKey="date"
-                          tickFormatter={(date) => {
-                            const d = new Date(date);
-                            return `${d.getDate()}/${d.getMonth() + 1}`;
-                          }}
-                        />
-                        <YAxis />
-                        <Tooltip
-                          labelFormatter={(label) => {
-                            const d = new Date(label);
-                            return d.toLocaleDateString('fr-FR');
-                          }}
-                        />
-                        <Legend />
-                        <Line
-                          type="monotone"
-                          dataKey="views"
-                          name="Vues"
-                          stroke="#f59e0b"
-                          strokeWidth={2}
-                          dot={{ fill: '#f59e0b' }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              )}
-
               {stats.movementsByDay && stats.movementsByDay.length > 0 && (
                 <Card>
                   <CardHeader>
@@ -207,92 +160,107 @@ export default function AdminDashboard() {
                       <Activity className="h-5 w-5" />
                       Mouvements de stock
                     </CardTitle>
-                    <CardDescription>Activité de gestion des stocks sur 30 jours</CardDescription>
+                    <CardDescription>Activité sur les 30 derniers jours</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={250}>
+                    <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={stats.movementsByDay}>
-                        <CartesianGrid strokeDasharray="3 3" />
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                         <XAxis
                           dataKey="date"
                           tickFormatter={(date) => {
                             const d = new Date(date);
                             return `${d.getDate()}/${d.getMonth() + 1}`;
                           }}
+                          className="text-xs"
                         />
-                        <YAxis />
+                        <YAxis className="text-xs" />
                         <Tooltip
                           labelFormatter={(label) => {
                             const d = new Date(label);
                             return d.toLocaleDateString('fr-FR');
                           }}
+                          contentStyle={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))' }}
                         />
                         <Legend />
-                        <Bar dataKey="restocks" name="Réappro." fill="#22c55e" />
-                        <Bar dataKey="usage" name="Utilisation" fill="#3b82f6" />
-                        <Bar dataKey="waste" name="Perte" fill="#ef4444" />
+                        <Bar dataKey="restocks" name="Réappro." fill="#22c55e" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="usage" name="Utilisation" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="waste" name="Perte" fill="#ef4444" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
               )}
+
+              {stats.recentActivity && stats.recentActivity.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Activity className="h-5 w-5" />
+                      Activité récente
+                    </CardTitle>
+                    <CardDescription>Dernières actions effectuées</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {stats.recentActivity.map((activity) => (
+                        <div key={activity.id} className="flex items-start gap-3 pb-3 border-b last:border-0">
+                          <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
+                            <Activity className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{activity.entityName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {activity.action.replace(/_/g, ' ')} · {activity.userEmail}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(activity.createdAt).toLocaleString('fr-FR', {
+                                day: '2-digit',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="w-full mt-4"
+                      onClick={() => router.push('/admin/logs')}
+                    >
+                      Voir tout le journal
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
-            {stats.popularCocktails.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Cocktails populaires
-                  </CardTitle>
-                  <CardDescription>Les 5 cocktails les plus consultés</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {stats.popularCocktails.map((cocktail, index) => (
-                      <div key={cocktail.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="text-2xl font-bold text-muted-foreground w-8">
-                            #{index + 1}
-                          </div>
-                          <div>
-                            <p className="font-medium">{cocktail.name}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Eye className="h-4 w-4" />
-                          <span className="font-medium">{cocktail.views}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {stats.stockAlerts.length > 0 && (
-              <Card className="border-destructive/50">
+              <Card className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-destructive">
+                  <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-500">
                     <AlertTriangle className="h-5 w-5" />
-                    Alertes de stock bas
+                    Alertes de stock
                   </CardTitle>
                   <CardDescription>Ingrédients nécessitant un réapprovisionnement</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {stats.stockAlerts.slice(0, 5).map((alert) => (
-                      <div key={alert.id} className="flex items-center justify-between p-3 bg-destructive/5 rounded-lg">
+                      <div key={alert.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-lg border">
                         <div>
                           <p className="font-medium">{alert.ingredientName}</p>
                           <p className="text-sm text-muted-foreground">
-                            Seuil: {alert.minThreshold} {alert.unit}
+                            Seuil minimum: {alert.minThreshold} {alert.unit}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-destructive">
+                          <p className="font-bold text-amber-600 dark:text-amber-500">
                             {Number(alert.quantity).toFixed(0)} {alert.unit}
                           </p>
+                          <p className="text-xs text-muted-foreground">restant</p>
                         </div>
                       </div>
                     ))}
@@ -303,7 +271,7 @@ export default function AdminDashboard() {
                       className="w-full mt-4"
                       onClick={() => router.push('/admin/stock')}
                     >
-                      Voir tous les {stats.stockAlerts.length} alertes
+                      Voir toutes les alertes ({stats.stockAlerts.length})
                     </Button>
                   )}
                 </CardContent>
@@ -313,152 +281,144 @@ export default function AdminDashboard() {
         )}
 
         <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-4">Gestion</h2>
+          <h2 className="text-2xl font-bold mb-4">Modules de Gestion</h2>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card
-            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
+            className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-l-4 border-l-amber-500"
             onClick={() => router.push('/admin/cocktails')}
           >
-            <CardHeader>
-              <div className="bg-amber-500 p-3 rounded-lg w-fit mb-3">
-                <Martini className="h-6 w-6 text-white" />
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-amber-500 p-2.5 rounded-lg">
+                  <Martini className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle className="text-lg">Cocktails</CardTitle>
               </div>
-              <CardTitle>Cocktails</CardTitle>
-              <CardDescription>Gérer les recettes de cocktails</CardDescription>
+              <CardDescription className="text-xs">
+                Recettes et compositions
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Créer, modifier et supprimer les cocktails du catalogue
-              </p>
-            </CardContent>
           </Card>
 
           <Card
-            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
+            className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-l-4 border-l-emerald-500"
             onClick={() => router.push('/admin/ingredients')}
           >
-            <CardHeader>
-              <div className="bg-green-500 p-3 rounded-lg w-fit mb-3">
-                <Package className="h-6 w-6 text-white" />
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-emerald-500 p-2.5 rounded-lg">
+                  <Package className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle className="text-lg">Ingrédients</CardTitle>
               </div>
-              <CardTitle>Ingrédients</CardTitle>
-              <CardDescription>Gérer les ingrédients</CardDescription>
+              <CardDescription className="text-xs">
+                Catalogue et tarification
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Ajouter, modifier et supprimer les ingrédients disponibles
-              </p>
-            </CardContent>
           </Card>
 
           <Card
-            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
+            className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-l-4 border-l-blue-500"
             onClick={() => router.push('/admin/stock')}
           >
-            <CardHeader>
-              <div className="bg-purple-500 p-3 rounded-lg w-fit mb-3">
-                <BarChart3 className="h-6 w-6 text-white" />
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-blue-500 p-2.5 rounded-lg">
+                  <BarChart3 className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle className="text-lg">Stocks</CardTitle>
               </div>
-              <CardTitle>Stocks</CardTitle>
-              <CardDescription>Suivre les quantités</CardDescription>
+              <CardDescription className="text-xs">
+                Inventaire et mouvements
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Gérer les stocks et suivre les mouvements d'ingrédients
-              </p>
-            </CardContent>
           </Card>
 
           <Card
-            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
-            onClick={() => router.push('/admin/users')}
-          >
-            <CardHeader>
-              <div className="bg-blue-500 p-3 rounded-lg w-fit mb-3">
-                <Users className="h-6 w-6 text-white" />
-              </div>
-              <CardTitle>Utilisateurs</CardTitle>
-              <CardDescription>Gérer les utilisateurs</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Créer, modifier et supprimer les comptes utilisateurs
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
-            onClick={() => router.push('/admin/logs')}
-          >
-            <CardHeader>
-              <div className="bg-slate-600 p-3 rounded-lg w-fit mb-3">
-                <Activity className="h-6 w-6 text-white" />
-              </div>
-              <CardTitle>Journal d'audit</CardTitle>
-              <CardDescription>Consulter les logs</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Voir toutes les actions effectuées sur le système
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
-            onClick={() => router.push('/admin/settings')}
-          >
-            <CardHeader>
-              <div className="bg-orange-500 p-3 rounded-lg w-fit mb-3">
-                <Settings className="h-6 w-6 text-white" />
-              </div>
-              <CardTitle>Paramètres</CardTitle>
-              <CardDescription>Configuration système</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Mode maintenance et autres paramètres système
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
-            onClick={() => router.push('/admin/costs')}
-          >
-            <CardHeader>
-              <div className="bg-green-500 p-3 rounded-lg w-fit mb-3">
-                <DollarSign className="h-6 w-6 text-white" />
-              </div>
-              <CardTitle>Analyse des Coûts</CardTitle>
-              <CardDescription>Rentabilité</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Calculer les coûts de revient et prix de vente suggérés
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
+            className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-l-4 border-l-cyan-500"
             onClick={() => router.push('/admin/restock')}
           >
-            <CardHeader>
-              <div className="bg-cyan-500 p-3 rounded-lg w-fit mb-3">
-                <Calendar className="h-6 w-6 text-white" />
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-cyan-500 p-2.5 rounded-lg">
+                  <Calendar className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle className="text-lg">Réappro.</CardTitle>
               </div>
-              <CardTitle>Réapprovisionnement</CardTitle>
-              <CardDescription>Planning</CardDescription>
+              <CardDescription className="text-xs">
+                Planning fournisseurs
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Planifier et suivre les commandes fournisseurs
-              </p>
-            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-l-4 border-l-green-500"
+            onClick={() => router.push('/admin/costs')}
+          >
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-green-500 p-2.5 rounded-lg">
+                  <DollarSign className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle className="text-lg">Rentabilité</CardTitle>
+              </div>
+              <CardDescription className="text-xs">
+                Analyse des coûts
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-l-4 border-l-slate-500"
+            onClick={() => router.push('/admin/users')}
+          >
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-slate-500 p-2.5 rounded-lg">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle className="text-lg">Utilisateurs</CardTitle>
+              </div>
+              <CardDescription className="text-xs">
+                Comptes et accès
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-l-4 border-l-slate-600"
+            onClick={() => router.push('/admin/logs')}
+          >
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-slate-600 p-2.5 rounded-lg">
+                  <Activity className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle className="text-lg">Audit</CardTitle>
+              </div>
+              <CardDescription className="text-xs">
+                Journal d'activité
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-l-4 border-l-orange-500"
+            onClick={() => router.push('/admin/settings')}
+          >
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-orange-500 p-2.5 rounded-lg">
+                  <Settings className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle className="text-lg">Paramètres</CardTitle>
+              </div>
+              <CardDescription className="text-xs">
+                Configuration système
+              </CardDescription>
+            </CardHeader>
           </Card>
         </div>
       </div>

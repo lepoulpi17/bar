@@ -15,19 +15,16 @@ export async function GET() {
 
     const now = new Date();
     const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     const [
       totalCocktails,
       totalIngredients,
       totalUsers,
       lowStockCount,
-      totalViews,
-      recentViews,
-      popularCocktails,
+      availableIngredientsCount,
       stockAlerts,
-      viewsLast30Days,
       stockMovementsLast30Days,
+      recentActivity,
     ] = await Promise.all([
       prisma.cocktail.count(),
       prisma.ingredient.count(),
@@ -40,19 +37,10 @@ export async function GET() {
           ],
         },
       }),
-      prisma.cocktailView.count(),
-      prisma.cocktailView.count({
+      prisma.barAvailability.count({
         where: {
-          viewedAt: {
-            gte: last7Days,
-          },
+          available: true,
         },
-      }),
-      prisma.cocktailView.groupBy({
-        by: ['cocktailId'],
-        _count: { cocktailId: true },
-        orderBy: { _count: { cocktailId: 'desc' } },
-        take: 5,
       }),
       prisma.stock.findMany({
         where: {
@@ -64,17 +52,10 @@ export async function GET() {
         include: {
           ingredient: true,
         },
+        orderBy: {
+          quantity: 'asc',
+        },
         take: 10,
-      }),
-      prisma.cocktailView.findMany({
-        where: {
-          viewedAt: {
-            gte: last30Days,
-          },
-        },
-        select: {
-          viewedAt: true,
-        },
       }),
       prisma.stockMovement.findMany({
         where: {
@@ -87,38 +68,20 @@ export async function GET() {
           createdAt: true,
         },
       }),
+      prisma.auditLog.findMany({
+        take: 10,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        select: {
+          id: true,
+          action: true,
+          userEmail: true,
+          entityName: true,
+          createdAt: true,
+        },
+      }),
     ]);
-
-    const cocktailIds = popularCocktails.map((v) => v.cocktailId);
-    const cocktailDetails = await prisma.cocktail.findMany({
-      where: { id: { in: cocktailIds } },
-      select: { id: true, name: true, imageUrl: true },
-    });
-
-    const popularCocktailsWithDetails = popularCocktails.map((view) => {
-      const cocktail = cocktailDetails.find((c) => c.id === view.cocktailId);
-      return {
-        id: view.cocktailId,
-        name: cocktail?.name || 'Unknown',
-        imageUrl: cocktail?.imageUrl,
-        views: view._count.cocktailId,
-      };
-    });
-
-    const viewsByDay = Array.from({ length: 30 }, (_, i) => {
-      const date = new Date(now.getTime() - (29 - i) * 24 * 60 * 60 * 1000);
-      const dayStart = new Date(date.setHours(0, 0, 0, 0));
-      const dayEnd = new Date(date.setHours(23, 59, 59, 999));
-
-      const count = viewsLast30Days.filter(
-        (v) => v.viewedAt >= dayStart && v.viewedAt <= dayEnd
-      ).length;
-
-      return {
-        date: dayStart.toISOString().split('T')[0],
-        views: count,
-      };
-    });
 
     const movementsByDay = Array.from({ length: 30 }, (_, i) => {
       const date = new Date(now.getTime() - (29 - i) * 24 * 60 * 60 * 1000);
@@ -148,10 +111,9 @@ export async function GET() {
         totalIngredients,
         totalUsers,
         lowStockCount,
-        totalViews,
-        recentViews,
+        totalStockValue: 0,
+        availableIngredientsCount,
       },
-      popularCocktails: popularCocktailsWithDetails,
       stockAlerts: stockAlerts.map((stock) => ({
         id: stock.id,
         ingredientName: stock.ingredient.name,
@@ -159,8 +121,14 @@ export async function GET() {
         unit: stock.unit,
         minThreshold: stock.minThreshold,
       })),
-      viewsByDay,
       movementsByDay,
+      recentActivity: recentActivity.map((activity) => ({
+        id: activity.id,
+        action: activity.action,
+        userEmail: activity.userEmail || 'Système',
+        entityName: activity.entityName || 'N/A',
+        createdAt: activity.createdAt,
+      })),
     });
   } catch (error) {
     console.error('Erreur récupération stats:', error);
