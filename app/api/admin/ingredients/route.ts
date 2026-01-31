@@ -12,6 +12,8 @@ const ingredientSchema = z.object({
   subcategory: z.string().nullable().optional(),
   isAlcoholic: z.boolean(),
   baseSpirit: z.string().nullable().optional(),
+  costPerUnit: z.number().nullable().optional(),
+  costUnit: z.string().optional(),
 });
 
 export async function GET() {

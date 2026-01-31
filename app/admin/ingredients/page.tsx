@@ -20,6 +20,8 @@ type Ingredient = {
   subcategory: string | null;
   isAlcoholic: boolean;
   baseSpirit: string | null;
+  costPerUnit: number | null;
+  costUnit: string | null;
   _count?: {
     cocktailIngredients: number;
   };
@@ -38,12 +40,16 @@ export default function AdminIngredientsPage() {
     subcategory: string;
     isAlcoholic: boolean;
     baseSpirit: string | undefined;
+    costPerUnit: string;
+    costUnit: string;
   }>({
     name: '',
     category: '',
     subcategory: '',
     isAlcoholic: false,
     baseSpirit: undefined,
+    costPerUnit: '',
+    costUnit: 'ml',
   });
 
   useEffect(() => {
@@ -69,6 +75,8 @@ export default function AdminIngredientsPage() {
       subcategory: '',
       isAlcoholic: false,
       baseSpirit: undefined,
+      costPerUnit: '',
+      costUnit: 'ml',
     });
     setEditingIngredient(null);
   };
@@ -85,6 +93,8 @@ export default function AdminIngredientsPage() {
       subcategory: ingredient.subcategory || '',
       isAlcoholic: ingredient.isAlcoholic,
       baseSpirit: ingredient.baseSpirit || undefined,
+      costPerUnit: ingredient.costPerUnit?.toString() || '',
+      costUnit: ingredient.costUnit || 'ml',
     });
     setEditingIngredient(ingredient);
     setDialogOpen(true);
@@ -97,6 +107,7 @@ export default function AdminIngredientsPage() {
       ...formData,
       subcategory: formData.subcategory || null,
       baseSpirit: formData.baseSpirit || null,
+      costPerUnit: formData.costPerUnit ? parseFloat(formData.costPerUnit) : null,
     };
 
     try {
@@ -240,6 +251,61 @@ export default function AdminIngredientsPage() {
                   </div>
                 )}
 
+                <div className="border-t pt-4 space-y-4">
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Informations tarifaires</Label>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Définissez le coût d'achat pour calculer la rentabilité des cocktails
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="costPerUnit">Prix d'achat par unité (€)</Label>
+                      <Input
+                        id="costPerUnit"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="Ex: 0.05"
+                        value={formData.costPerUnit}
+                        onChange={(e) => setFormData({ ...formData, costPerUnit: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Coût par {formData.costUnit}
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="costUnit">Unité de coût</Label>
+                      <Select value={formData.costUnit} onValueChange={(v) => setFormData({ ...formData, costUnit: v })}>
+                        <SelectTrigger id="costUnit">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ml">ml (millilitres)</SelectItem>
+                          <SelectItem value="cl">cl (centilitres)</SelectItem>
+                          <SelectItem value="L">L (litres)</SelectItem>
+                          <SelectItem value="g">g (grammes)</SelectItem>
+                          <SelectItem value="kg">kg (kilogrammes)</SelectItem>
+                          <SelectItem value="unité">unité</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {formData.costPerUnit && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <p className="text-sm text-green-900">
+                        <span className="font-semibold">Exemple de calcul :</span> Pour 50 ml, le coût sera de{' '}
+                        <span className="font-bold">
+                          {(parseFloat(formData.costPerUnit) * 50).toFixed(2)} €
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                     Annuler
@@ -263,6 +329,7 @@ export default function AdminIngredientsPage() {
                     <th className="text-left p-4 font-semibold">Catégorie</th>
                     <th className="text-left p-4 font-semibold">Type</th>
                     <th className="text-left p-4 font-semibold">Base</th>
+                    <th className="text-left p-4 font-semibold">Prix d'achat</th>
                     <th className="text-left p-4 font-semibold">Cocktails</th>
                     <th className="text-right p-4 font-semibold">Actions</th>
                   </tr>
@@ -282,6 +349,20 @@ export default function AdminIngredientsPage() {
                         )}
                       </td>
                       <td className="p-4">{ingredient.baseSpirit || '-'}</td>
+                      <td className="p-4">
+                        {ingredient.costPerUnit ? (
+                          <div>
+                            <span className="font-semibold text-green-600">
+                              {Number(ingredient.costPerUnit).toFixed(2)} €
+                            </span>
+                            <span className="text-xs text-muted-foreground ml-1">
+                              / {ingredient.costUnit || 'ml'}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Non défini</span>
+                        )}
+                      </td>
                       <td className="p-4">{ingredient._count?.cocktailIngredients || 0}</td>
                       <td className="p-4">
                         <div className="flex justify-end gap-2">
